@@ -213,11 +213,16 @@ def update_db(music_dir, verbose=False):
             # No need for an "else". If track is unchanged, do nothing.
 
     # Purge the database entries that aren't in the music directory.
-    # XXX Should we handle orphan albums here? If all tracks belonging to an
-    # album are removed, the album will remain.
     for track in db.session.query(Track).all():
         if track.filename not in filenames_found:
             db.session.delete(track)
+    db.session.commit() # XXX Needed to detect newly orphaned albums
+
+    # Delete orphaned albums.
+    for album in db.session.query(Album).all():
+        track = db.session.query(Track).filter_by(album=album).first()
+        if track is None:
+            db.session.delete(album)
     db.session.commit()
 
 if __name__ == "__main__":
